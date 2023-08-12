@@ -230,3 +230,8 @@ html {
     margin-bottom: 15px !important;
   }
 }
+
+.modal-dialog {
+  margin: auto;
+  margin-top: 10%;
+}
