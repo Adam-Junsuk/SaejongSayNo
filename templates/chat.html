@@ -1,32 +1,32 @@
-<link
-  href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
-  rel="stylesheet"
-  id="bootstrap-css"
-/>
-<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-
 <!DOCTYPE html>
 <html>
   <head>
     <title>Chatbot</title>
+    <!-- jQuery (필수) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- Bootstrap JS (필수) -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Bootstrap CSS -->
     <link
       rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-      integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
-      crossorigin="anonymous"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
     />
+
+    <!-- FontAwesome -->
     <link
       rel="stylesheet"
       href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
       integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
       crossorigin="anonymous"
     />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Custom CSS -->
     <link
       rel="stylesheet"
       type="text/css"
-      href="{{ url_for('static', filename='style.css')}}"
+      href="{{ url_for('static', filename='style.css') }}"
     />
   </head>
 
@@ -46,8 +46,11 @@
                 </div>
                 <div class="user_info">
                   <span>ChatBot</span>
-                  <p>Ask me anything!</p>
+                  <p id="nonLoginCount">비 로그인 사용 횟수: 5번</p>
                 </div>
+                <button id="kakaoLoginBtn" style="display: none">
+                  카카오톡 로그인
+                </button>
               </div>
             </div>
             <div id="messageFormeight" class="card-body msg_card_body"></div>
@@ -78,11 +81,70 @@
       </div>
     </div>
 
+    <!-- 로그인 모달 추가 -->
+    <div
+      class="modal fade"
+      id="loginModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="loginModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loginModalLabel">로그인 필요</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            더 이상 사용할 수 없습니다. 로그인 하세요.
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              닫기
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="location.href='/login';"
+            >
+              로그인 하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        var nonLoginCount = getCookie("nonLoginCount") || 5;
+
         document
           .getElementById("messageArea")
           .addEventListener("submit", function (event) {
+            event.preventDefault(); // 폼 제출 중지
+
+            if (nonLoginCount <= 0) {
+              $("#loginModal").modal("show"); // 모달 창 띄우기
+              return; // 0일 때 이후 로직 실행하지 않고 리턴
+            }
+
+            nonLoginCount -= 1;
+            document.getElementById("nonLoginCount").innerText =
+              "비 로그인 사용 횟수: " + nonLoginCount + "번";
+            setCookie("nonLoginCount", nonLoginCount, 1);
+
             const date = new Date();
             const hour = date.getHours();
             const minute = date.getMinutes();
@@ -102,7 +164,7 @@
               .insertAdjacentHTML("beforeend", userHtml);
 
             fetch("/get", {
-              method: "POST",git a
+              method: "POST",
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
               },
@@ -120,9 +182,45 @@
                   .getElementById("messageFormeight")
                   .insertAdjacentHTML("beforeend", botHtml);
               });
-
-            event.preventDefault();
           });
+
+        // 쿠키 가져오기 함수
+        function getCookie(cname) {
+          var name = cname + "=";
+          var decodedCookie = decodeURIComponent(document.cookie);
+          var ca = decodedCookie.split(";");
+          for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == " ") {
+              c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+              return c.substring(name.length, c.length);
+            }
+          }
+          return "";
+        }
+
+        // 쿠키 설정 함수
+        function setCookie(cname, cvalue, exdays) {
+          var d = new Date();
+          d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+          var expires = "expires=" + d.toUTCString();
+          document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        $(document).ready(function () {
+          function scrollToBottom() {
+            $("#messageFormeight").scrollTop(
+              $("#messageFormeight")[0].scrollHeight
+            );
+          }
+
+          $("#messageArea").submit(function (e) {
+            e.preventDefault();
+            scrollToBottom();
+          });
+        });
       });
     </script>
   </body>
